@@ -5,10 +5,18 @@ document.addEventListener("DOMContentLoaded", function () {
   if (textarea) {
     var editor = CodeMirror.fromTextArea(textarea, {
       lineNumbers: true,
-      mode: "yaml", // Choose a mode
-      theme: "default", // Choose a theme
-      // height
+      mode: "yaml",
+      theme: "default",
+      indentWithTabs: false, // Use spaces instead of tabs
+      indentUnit: 2, // Number of spaces for each indentation level
+      extraKeys: {
+        Tab: function (cm) {
+          cm.replaceSelection("  ", "end"); // Inserts two spaces on Tab
+        },
+      },
     });
+
+    editor.setSize("100%", "100%");
 
     editor.on("change", function (cm) {
       textarea.value = cm.getValue();
@@ -28,29 +36,3 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
-
-// document.addEventListener("DOMContentLoaded", function () {
-//   const frogDescription = document.getElementById("frog_description");
-
-//   frogDescription.addEventListener("change", function () {
-//     const yamlContent = frogDescription.value;
-
-//     jQuery.ajax({
-//       url: ajaxurl,
-//       type: "POST",
-//       data: {
-//         action: "validate_frog_yaml",
-//         yaml_content: yamlContent,
-//       },
-//       success: function (response) {
-//         if (response.success) {
-//           console.log("YAML is valid");
-//           // Optionally, update the UI to show valid YAML
-//         } else {
-//           console.log("YAML is invalid:", response.data);
-//           // Optionally, show validation error to the user
-//         }
-//       },
-//     });
-//   });
-// });

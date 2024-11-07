@@ -129,6 +129,11 @@ class Frog_Templating_Admin
 		// frog_description_indicator
 		echo '<div id="frog_description_indicator"></div>';
 		echo '<textarea id="frog_description" name="frog_description">' . esc_textarea($frog_description) . '</textarea>';
+		// TODO: preview
+		// echo '<div id="frog_description_preview"></div>';
+		// echo '<button id="frog_description_preview_button" class="button button-primary">Preview</button>';
+		// discover https://github.com/elfedali/frog-templating
+		echo "<p> <a href='https://github.com/elfedali/frog-templating' target='_blank'>Frog templating documentation</a></p>";
 	}
 
 	/**
@@ -202,7 +207,7 @@ class Frog_Templating_Admin
 		}
 
 		$yamlContent = ($_POST['yaml_content']);
-		error_log($yamlContent);
+
 		// Initialize the BuildHTML class
 		//require_once 'path/to/BuildHTML.php'; // Adjust to your file path
 		$builder = new \Frog\Templating\Core\BuildHTML();
