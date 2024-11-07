@@ -8,6 +8,7 @@ This plugin allows you to build pages using YAML. It is a simple way to create p
 
 ```yaml
 cdns:
+  - https://cdnjs.cloudflare.com/ajax/libs/flexboxgrid/6.3.1/flexboxgrid.min.css
 scripts:
   - src: wp-content/themes/yastatheme/frog.js
   - inline: |
