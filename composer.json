@@ -1,0 +1,40 @@
+{
+  "name": "eeelfedali/frog-templating",
+  "description": "Generate html from yaml metabox",
+  "type": "wordpress-plugin",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "metabox",
+    "yaml",
+    "twig",
+    "FrogTemplating",
+    "Frog",
+    "Templating",
+    "Page Builder",
+    "Page",
+    "Builder",
+    "PageBuilder"
+  ],
+  "version": "1.0.0",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Frog\\Templating\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Abdessamad EL FEDALI",
+      "email": "a.elfedali@gmail.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "symfony/yaml": "^7.1",
+    "filp/whoops": "^2.16"
+  },
+  "require-dev": {
+    "symfony/var-dumper": "^7.1"
+  }
+}
