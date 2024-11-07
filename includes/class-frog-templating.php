@@ -168,6 +168,8 @@ class Frog_Templating
 		$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_codemirror_assets');
 		// append_frog_description_to_content
 		$this->loader->add_action('the_content', $plugin_admin, 'append_frog_description_to_content');
+		// ajax validation yaml  wp_ajax_validate_frog_yaml
+		$this->loader->add_action('wp_ajax_validate_frog_yaml', $plugin_admin, 'validate_frog_yaml');
 	}
 
 	/**

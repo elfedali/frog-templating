@@ -7,179 +7,109 @@ use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class BuildHTML
- * 
- * This class is responsible for reading a YAML file and generating HTML content
- * based on the structure defined within the YAML file. It supports adding CDN links,
- * inline and external scripts, and content sections with nested elements.
- *
- * @package CodeWp\Core
+ * Generates HTML from a YAML structure.
  */
 class BuildHTML
 {
-    /**
-     * @var array Holds parsed YAML data
-     */
-    private array $yamlData;
-
-    /**
-     * @var string Accumulates the generated HTML output
-     */
+    private array $yamlData = [];
     private string $htmlOutput = '';
 
     /**
-     * BuildHTML constructor.
+     * Loads YAML from file or string and parses it.
      *
-     * Initializes the class by loading and parsing the YAML file.
-     *
-     * @param string $yamlFilePath The path to the YAML file
+     * @param string $yaml Input YAML (file path or string).
+     * @param bool $isFile True if input is a file path.
+     * @throws \Exception on parse error.
      */
-    // public function __construct(string $yamlFilePath)
-    // {
-    //     $this->loadYaml($yamlFilePath);
-    // }
-
-    /**
-     * Loads and parses a YAML file into the yamlData array.
-     *
-     * @param string $filePath The path to the YAML file
-     * @throws \Exception if YAML parsing fails
-     */
-    private function loadYaml(string $filePath): void
+    private function loadYaml(string $yaml, bool $isFile = true): void
     {
         try {
-            $this->yamlData = Yaml::parseFile($filePath);
-        } catch (ParseException $exception) {
-            throw new \Exception("YAML Parsing Error: " . $exception->getMessage());
+            $this->yamlData = $isFile ? Yaml::parseFile($yaml) : Yaml::parse($yaml);
+        } catch (ParseException $e) {
+            throw new \Exception("YAML Parsing Error: " . $e->getMessage());
         }
     }
 
     /**
-     * Generates HTML tags for CDN links from the parsed YAML data.
+     * Generates HTML for CDN links or scripts.
      *
-     * Adds `<link>` tags for CSS and `<script>` tags for JavaScript.
+     * @param string $type Either 'cdns' or 'scripts'.
      */
-    private function generateCdns(): void
+    private function generateLinksOrScripts(string $type): void
     {
-        if (!empty($this->yamlData['cdns'])) {
-            foreach ($this->yamlData['cdns'] as $cdn) {
-                $ext = pathinfo($cdn, PATHINFO_EXTENSION);
-                if ($ext === 'css') {
-                    $this->htmlOutput .= "<link rel='stylesheet' href='{$cdn}'>\n";
-                } elseif ($ext === 'js') {
-                    $this->htmlOutput .= "<script src='{$cdn}'></script>\n";
-                }
+        foreach ($this->yamlData[$type] ?? [] as $item) {
+            if ($type === 'cdns') {
+                $ext = pathinfo($item, PATHINFO_EXTENSION);
+                $tag = $ext === 'css' ? "<link rel='stylesheet' href='$item'>" : "<script src='$item'></script>";
+            } else {
+                $tag = isset($item['src']) ? "<script src='{$item['src']}'></script>" : "<script>{$item['inline']}</script>";
             }
+            $this->htmlOutput .= "$tag\n";
         }
     }
 
     /**
-     * Generates HTML for inline and external scripts defined in the YAML data.
+     * Recursively generates HTML for content sections.
      *
-     * Adds `<script>` tags with either `src` attributes for external files or inline JavaScript code.
-     */
-    private function generateScripts(): void
-    {
-
-        if (!empty($this->yamlData['scripts'])) {
-            foreach ($this->yamlData['scripts'] as $script) {
-                if (isset($script['src'])) {
-                    $this->htmlOutput .= "<script src='{$script['src']}'></script>\n";
-                } elseif (isset($script['inline'])) {
-                    $this->htmlOutput .= "<script>\n{$script['inline']}\n</script>\n";
-                }
-            }
-        }
-    }
-
-    /**
-     * Recursively generates HTML for content sections and nested elements.
-     *
-     * Iterates through each element in the content array and builds the HTML structure
-     * by setting tag attributes, nested content, and closing tags.
-     *
-     * @param array $contentArray The array of content elements to generate HTML for
-     * @return string Generated HTML for the content section
+     * @param array $contentArray Array of content elements.
+     * @return string HTML output.
      */
     private function generateContent(array $contentArray): string
     {
         $html = '';
         foreach ($contentArray as $content) {
             $tag = $content['tag'];
-            $attributes = '';
-
-            // Build element attributes from YAML key-value pairs
-            foreach ($content as $attr => $value) {
-                if ($attr !== 'tag' && $attr !== 'content') {
-                    if (is_array($value)) {
-                        $attributes .= " $attr='";
-                        foreach ($value as $key => $val) {
-                            $attributes .= "$key:$val;";
-                        }
-                        $attributes .= "'";
-                    } else {
-                        $attributes .= " $attr=\"$value\"";
-                    }
-                }
-            }
-
-            // Open the tag with attributes
+            $attributes = $this->buildAttributes($content);
             $html .= "<$tag$attributes>";
-
-            // Add nested content or text content
-            if (isset($content['content']) && is_array($content['content'])) {
-                $html .= $this->generateContent($content['content']);
-            } elseif (isset($content['content'])) {
-                $html .= $content['content'];
-            }
-
-            // Close the tag
+            $html .= is_array($content['content'] ?? null) ? $this->generateContent($content['content']) : ($content['content'] ?? '');
             $html .= "</$tag>";
         }
         return $html;
     }
 
     /**
-     * Builds the complete HTML structure based on the YAML configuration.
+     * Builds tag attributes from YAML.
      *
-     * This method orchestrates the process by generating CDN links, content sections, 
-     * and scripts in sequence and returning the final HTML output.
-     *
-     * @return string The complete HTML output
-     * @throws \Exception if YAML loading or parsing encounters errors
+     * @param array $attributes Array of attributes.
+     * @return string Formatted attributes.
      */
-    public function build(): string
+    private function buildAttributes(array $attributes): string
     {
-        $this->generateCdns();
-
-        if (!empty($this->yamlData['sections'])) {
-            $this->htmlOutput .= $this->generateContent($this->yamlData['sections']);
+        $attrStr = '';
+        foreach ($attributes as $key => $value) {
+            if ($key === 'tag' || $key === 'content') continue;
+            if (is_array($value)) {
+                $value = implode(';', array_map(fn($k, $v) => "$k:$v", array_keys($value), $value));
+            }
+            $attrStr .= " $key=\"$value\"";
         }
-
-        $this->generateScripts();
-
-        return $this->htmlOutput;
+        return $attrStr;
     }
 
-
-    // build from string yaml
-    public function buildFromString(string $yaml): string
+    /**
+     * Builds HTML output from YAML configuration.
+     *
+     * @param string $yaml Input YAML string or file path.
+     * @param bool $isFile True if input is a file path.
+     * @return string HTML output.
+     */
+    public function build(string $yaml, bool $isFile = true): string
     {
-        $this->yamlData = Yaml::parse($yaml);
-
-
-        if (!empty($this->yamlData['cdns'])) {
-            $this->generateCdns();
-        }
-
-        if (!empty($this->yamlData['sections'])) {
-            $this->htmlOutput .= $this->generateContent($this->yamlData['sections']);
-        }
-
-        if (!empty($this->yamlData['scripts'])) {
-            $this->generateScripts();
-        }
-
-
+        $this->loadYaml($yaml, $isFile);
+        $this->generateLinksOrScripts('cdns');
+        $this->htmlOutput .= $this->generateContent($this->yamlData['sections'] ?? []);
+        $this->generateLinksOrScripts('scripts');
         return $this->htmlOutput;
+    }
+    // is Yaml valide
+    public function isYamlValid(string $yaml, bool $isFile = true): bool
+    {
+        try {
+            $this->loadYaml($yaml, $isFile);
+            return true;
+        } catch (\Exception $e) {
+            error_log($e->getMessage());
+            return false;
+        }
     }
 }

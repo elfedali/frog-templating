@@ -125,6 +125,9 @@ class Frog_Templating_Admin
 
 
 		// echo '<p><label for="frog_description">Frog templating</label></p>';
+		// echo '<p><label for="frog_description">Frog templating</label></p>';
+		// frog_description_indicator
+		echo '<div id="frog_description_indicator"></div>';
 		echo '<textarea id="frog_description" name="frog_description">' . esc_textarea($frog_description) . '</textarea>';
 	}
 
@@ -161,6 +164,8 @@ class Frog_Templating_Admin
 		wp_enqueue_script('codemirror-js', 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js', array(), null, true);
 		wp_enqueue_script('codemirror-mode-js', 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/yaml/yaml.min.js', array('codemirror-js'), null, true);
 		wp_enqueue_style('codemirror-css', 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css');
+		// cobalt theme
+		// wp_enqueue_style('codemirror-theme-css', 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/cobalt.min.css');
 
 		// Enqueue custom script to initialize CodeMirror
 		wp_enqueue_script('init-codemirror', plugin_dir_url(__FILE__) . 'js/init-codemirror.js', array('codemirror-js'), null, true);
@@ -174,8 +179,8 @@ class Frog_Templating_Admin
 			if (get_post_meta($post->ID, '_frog_description', true)) {
 				// Get the Frog Description meta data
 				$frog_description = get_post_meta($post->ID, '_frog_description', true);
-				$builder = new BuildHTML();
-				$html = $builder->buildFromString($frog_description);
+				$builder_html = new BuildHTML();
+				$html = $builder_html->build($frog_description, false);
 
 				// Append Frog Description to the page content
 				if (!empty($frog_description)) {
@@ -185,5 +190,28 @@ class Frog_Templating_Admin
 		}
 
 		return $content;
+	}
+
+
+	public function  validate_frog_yaml()
+	{
+
+		// Check if YAML content is set
+		if (!isset($_POST['yaml_content'])) {
+			wp_send_json_error('YAML content is missing');
+		}
+
+		$yamlContent = ($_POST['yaml_content']);
+		error_log($yamlContent);
+		// Initialize the BuildHTML class
+		//require_once 'path/to/BuildHTML.php'; // Adjust to your file path
+		$builder = new \Frog\Templating\Core\BuildHTML();
+
+		// Validate YAML
+		if ($builder->isYamlValid($yamlContent, false)) {
+			wp_send_json_success('<p style="color:green;">YAML is valid<p>');
+		} else {
+			wp_send_json_error('<p style="color: red;">⚠️ Invalid YAML syntax<p>');
+		}
 	}
 }
